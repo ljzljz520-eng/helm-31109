@@ -851,6 +851,13 @@ func (c *Client) ValidateReference(ref, version string, u *url.URL) (*url.URL, e
 	if errSemVer == nil {
 		tag = version
 	} else {
+		// Retrieving the repository tags requires contacting the registry, so a
+		// configured client is mandatory. Without one, a version that can't be
+		// resolved locally (no tag, digest, or explicit semver) can't be resolved
+		// at all. Return a handleable error instead of panicking on a nil client.
+		if c == nil {
+			return nil, fmt.Errorf("chart %q is an OCI reference, but no registry client was configured", ref)
+		}
 		// Retrieve list of repository tags
 		tags, err := c.Tags(strings.TrimPrefix(ref, fmt.Sprintf("%s://", OCIScheme)))
 		if err != nil {
