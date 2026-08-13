@@ -358,3 +358,30 @@ func TestScanReposForURL(t *testing.T) {
 		t.Fatalf("expected ErrNoOwnerRepo, got %v", err)
 	}
 }
+
+func TestPrivateMissingRegistryClient(t *testing.T) {
+	c := ChartDownloader{
+		Out:              os.Stderr,
+		RepositoryConfig: repoConfig,
+		RepositoryCache:  repoCache,
+		Getters: getter.All(&cli.EnvSettings{
+			RepositoryConfig: repoConfig,
+			RepositoryCache:  repoCache,
+		}),
+	}
+
+	const ref = "oci://example.com/charts/nginx"
+	var err error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("ResolveChartVersion panicked: %v", r)
+			}
+		}()
+		_, err = c.ResolveChartVersion(ref, "")
+	}()
+
+	if err == nil {
+		t.Fatalf("expected error resolving %q, got nil", ref)
+	}
+}
